@@ -9,23 +9,45 @@ use Admingenerator\GeneratorBundle\Exception\InvalidOptionException;
  *
  * @author cedric Lombardot
  * @author Piotr Gołębiewski <loostro@gmail.com>
+ * @author Stéphane Escandell <stephane.escandell@gmail.com>
  */
 use Doctrine\Common\Util\Inflector;
 
 class Column
 {
+    /**
+     * @var string
+     */
     protected $name;
 
-    protected $sortable;
+    /**
+     * @var bool
+     */
+    protected $sortable = true;
 
+    /**
+     * @var string
+     */
     protected $sortOn;
 
-    protected $sortType;
+    /**
+     * @var string
+     */
+    protected $sortType = 'default';
 
-    protected $filterable;
+    /**
+     * @var bool
+     */
+    protected $filterable = false;
 
+    /**
+     * @var string
+     */
     protected $filterOn;
 
+    /**
+     * @var string
+     */
     protected $dbType;
 
     /**
@@ -39,51 +61,86 @@ class Column
      *
      * If undefined, the field will not be formatted.
      *
-     * Since the functions may vary in diffrent Database types, Admingenerator does not,
+     * Since the functions may vary in different Database types, Admingenerator does not,
      * by default, format fields in any way. It is up to developer to implement this for his fields.
      *
      * Note: this feature was created mainly for Date/DateTime fields.
      */
     protected $dbFormat;
 
+    /**
+     * @var string
+     */
     protected $customView = null;
 
+    /**
+     * @var string
+     */
     protected $formType;
 
+    /**
+     * @var string
+     */
     protected $filterType;
 
+    /**
+     * @var array
+     */
     protected $formOptions = array();
 
+    /**
+     * @var string
+     */
     protected $getter;
 
+    /**
+     * @var string
+     */
     protected $label = null;
 
+    /**
+     * @var string
+     */
     protected $help;
 
+    /**
+     * @var string
+     */
     protected $localizedDateFormat;
 
+    /**
+     * @var string
+     */
     protected $localizedTimeFormat;
 
+    /**
+     * @var string
+     */
     protected $primaryKey = null;
 
-    /** For special columns template */
-    protected $extras;
+    /**
+     * For special columns template
+     *
+     * @var array
+     */
+    protected $extras = array();
 
+    /**
+     * @var array
+     */
     protected $groups = array();
 
     /* Used for more verbose error messages */
     protected $debug = array();
 
     /**
+     * @param string  $name
      * @param boolean $debug
      */
     public function __construct($name, $debug)
     {
         $this->name     = $name;
         $this->debug    = $debug;
-        $this->sortable = true;
-        $this->sortType = 'default';
-        $this->filterable = false;
     }
 
     public function setProperty($option, $value)
@@ -264,19 +321,10 @@ class Column
         return $this->localizedTimeFormat;
     }
 
-    public function setAddFormOptions(array $complementary_options = array())
+    public function setAddFormOptions(array $additionalOptions = array())
     {
-        foreach ($complementary_options as $option => $value) {
-            if (is_array($value)) {
-                foreach ($value as $k => $v) {
-                    if (preg_match('/\.(.+)/i', $k, $matches)) {
-                        // enable to call php function to build your form options
-                        $value = call_user_func_array($matches[1], $v);
-                    }
-                }
-            }
-
-            $this->formOptions[$option] = $value;
+        foreach ($additionalOptions as $option => $value) {
+            $this->formOptions[$option] = $this->parseOption($option);
         }
     }
 
@@ -328,5 +376,19 @@ class Column
     public function getGroups()
     {
         return $this->groups;
+    }
+
+    protected function parseOption($option)
+    {
+        if (is_array($option)) {
+            foreach ($option as $k => $v) {
+                if (preg_match('/\.(.+)/i', $k, $matches)) {
+                    // enable to call php function to build your form options
+                    $option = call_user_func_array($matches[1], $v);
+                }
+            }
+        }
+
+        return $option;
     }
 }

@@ -49,7 +49,9 @@ class ListBuilder extends BaseBuilder
 
     protected function findFilterColumns()
     {
-        foreach ($this->getAllFields() as $columnName) {
+        $columnsName = $this->getVariable('filters') ?: $this->getAllFields();
+
+        foreach ($columnsName as $columnName) {
             $column = $this->createColumn($columnName, true);
             $this->setUserColumnConfiguration($column);
 
