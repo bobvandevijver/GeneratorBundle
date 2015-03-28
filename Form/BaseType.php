@@ -48,7 +48,7 @@ abstract class BaseType extends AbstractType
      */
     protected function checkGroups(array $groups)
     {
-        if (count($this->groups) === 0 || count($groups) === 0) {
+        if (count($groups) === 0) {
             return true;
         }
 
