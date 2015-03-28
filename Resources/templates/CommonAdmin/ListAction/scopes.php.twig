@@ -38,7 +38,7 @@
         foreach ($scopes as $scopeGroupName => $scopeName) {
             $filters += $this->getScopeFilters($scopeGroupName);
         }
-        $this->setFilters($filters);
+        $this->setFilters($filters, false);
 
     }
 

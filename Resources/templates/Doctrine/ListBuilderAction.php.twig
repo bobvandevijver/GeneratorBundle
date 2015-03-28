@@ -5,7 +5,7 @@
      *
      * @param array the filters
      */
-    protected function setFilters($filters)
+    protected function setFilters(array $filters)
     {
         {%- for filter,column in builder.filterColumns -%}
             {%- if 'entity' == builder.getFieldGuesser().getDbType(model, filter) or 'collection' == builder.getFieldGuesser().getDbType(model, filter) -%}
@@ -126,16 +126,10 @@
 
     {% for filter,column in builder.filterColumns %}
         if (isset($filterObject['{{ column.name }}']) && null !== $filterObject['{{ column.name }}']) {
-        {% if column.groups %}
-            if ($this->checkGroups({{ column.groups|as_php }})) {
-        {% endif %}
-            {% if column.filterOn|split('.')|length > 1 %}
-                $this->filter{{ filter|classify }}($queryFilter, $filterObject['{{ column.name }}']);
-            {% else %}
-                $queryFilter->add{{ column.dbType|classify }}Filter('{{ column.filterOn }}', $filterObject['{{ column.name }}']);
-            {% endif %}
-        {% if column.groups %}
-            }
+        {% if column.filterOn|split('.')|length > 1 %}
+            $this->filter{{ filter|classify }}($queryFilter, $filterObject['{{ column.name }}']);
+        {% else %}
+            $queryFilter->add{{ column.dbType|classify }}Filter('{{ column.filterOn }}', $filterObject['{{ column.name }}']);
         {% endif %}
         }
     {% endfor %}
