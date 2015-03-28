@@ -71,7 +71,7 @@ class ListBuilder extends BaseBuilder
         $groups = array();
 
         foreach ($this->getFilterColumns() as $column) {
-            $columnGroups = $column->getGroups();
+            $columnGroups = $column->getFiltersGroups();
             // If one column has no Group constraint, we always
             // have to display the filter panel
             if (empty($columnGroups)) {

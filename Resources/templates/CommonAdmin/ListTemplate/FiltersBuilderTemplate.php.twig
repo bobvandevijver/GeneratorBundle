@@ -24,9 +24,9 @@
                         {{ echo_twig("form_errors(form)") }}
                         {% for column in builder.filterColumns %}
                             {{ echo_block("list_filters_field_" ~ (column.name|lower)) }}
-                            {% if column.groups is not empty %}
-                                {{ echo_set('columnGroups', echo_twig_arr(column.groups), false) }}
-                                {{ echo_if('columnGroups|intersect(groups) is not empty') }}
+                            {% if column.filtersGroups is not empty %}
+                                {{ echo_set('columnFiltersGroups', echo_twig_arr(column.filtersGroups), false) }}
+                                {{ echo_if('columnFiltersGroups|intersect(groups) is not empty') }}
                             {% endif %}
                             <div class="list-filters-field-{{ column.name|lower }} list-filters-type-{{ column.filterType|lower }}">
                                 {{ echo_block("list_filters_field_" ~ (column.name|lower) ~ "_content" ) }}
@@ -35,7 +35,7 @@
                                 {{ echo_twig("form_errors(form['" ~ column.name ~ "'], {'attr': {'class': 'form-control-feedback'}})") }}
                                 {{ echo_endblock() }}
                             </div>
-                            {% if column.groups is not empty %}
+                            {% if column.filtersGroups is not empty %}
                                 {{ echo_endif () }}
                             {% endif %}
                             {{ echo_endblock() }}

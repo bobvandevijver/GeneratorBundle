@@ -130,6 +130,11 @@ class Column
      */
     protected $groups = array();
 
+    /**
+     * @var array
+     */
+    protected $filtersGroups = array();
+
     /* Used for more verbose error messages */
     protected $debug = array();
 
@@ -376,6 +381,20 @@ class Column
     public function getGroups()
     {
         return $this->groups;
+    }
+
+    public function setFiltersGroups(array $groups = array())
+    {
+        return $this->filtersGroups = $groups;
+    }
+
+    public function getFiltersGroups()
+    {
+        if (empty($this->filtersGroups)) {
+            return $this->groups;
+        }
+
+        return $this->filtersGroups;
     }
 
     protected function parseOption($option)

@@ -53,13 +53,13 @@ class FiltersType extends BaseType
     }
 
     /**
-     * Check groups for {{ column.name }} field.
+     * Check filters groups for {{ column.name }} field.
      *
      * @return boolean
      */
     protected function canDisplay{{ column.name|classify|php_name }}()
     {
-        return $this->checkGroups({{ column.groups|as_php }});
+        return $this->checkGroups({{ column.filtersGroups|as_php }});
     }
 {% endfor %}
 
