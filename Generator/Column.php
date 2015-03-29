@@ -328,8 +328,8 @@ class Column
 
     public function setAddFormOptions(array $additionalOptions = array())
     {
-        foreach ($additionalOptions as $option => $value) {
-            $this->formOptions[$option] = $this->parseOption($option);
+        foreach ($additionalOptions as $name => $option) {
+            $this->formOptions[$name] = $this->parseOption($option);
         }
     }
 
