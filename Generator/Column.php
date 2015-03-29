@@ -133,7 +133,7 @@ class Column
     /**
      * @var array
      */
-    protected $filtersGroups = array();
+    protected $filtersGroups = false;
 
     /* Used for more verbose error messages */
     protected $debug = array();
@@ -390,7 +390,7 @@ class Column
 
     public function getFiltersGroups()
     {
-        if (empty($this->filtersGroups)) {
+        if (false === $this->filtersGroups) {
             return $this->groups;
         }
 
