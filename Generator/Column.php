@@ -145,6 +145,7 @@ class Column
     public function __construct($name, $debug)
     {
         $this->name     = $name;
+        $this->filterOn = $name;
         $this->debug    = $debug;
     }
 
@@ -243,12 +244,12 @@ class Column
 
     public function getFilterOn()
     {
-        return $this->filterOn != "" ? $this->filterOn : $this->name;
+        return $this->filterOn;
     }
 
-    public function setFilterOn($filter_on)
+    public function setFilterOn($filterOn)
     {
-        return $this->filterOn = $filter_on;
+        return $this->filterOn = $filterOn;
     }
 
     private function humanize($text)

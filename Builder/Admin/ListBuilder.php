@@ -10,6 +10,7 @@ use Admingenerator\GeneratorBundle\Generator\Action;
  *
  * @author cedric Lombardot
  * @author Piotr Gołębiewski <loostro@gmail.com>
+ * @author Stéphane Escandell <stephane.escandell@gmail.com>
  */
 class ListBuilder extends BaseBuilder
 {
@@ -50,16 +51,16 @@ class ListBuilder extends BaseBuilder
     protected function findFilterColumns()
     {
         $columnsName = $this->getVariable('filters');
-
+        $fromFilterConfiguration = true;
         if (null === $columnsName) {
+            $fromFilterConfiguration = false;
             $columnsName = $this->getAllFields();
         }
 
         foreach ($columnsName as $columnName) {
             $column = $this->createColumn($columnName, true);
-            $this->setUserColumnConfiguration($column);
 
-            if ($column->isFilterable()) {
+            if ($fromFilterConfiguration || $column->isFilterable()) {
                 $this->addFilterColumn($column);
             }
         }
@@ -114,7 +115,6 @@ class ListBuilder extends BaseBuilder
             $column = $this->createColumn($columnName, true);
 
             // Set the user parameters
-            $this->setUserColumnConfiguration($column);
             $this->addScopeColumn($column);
         }
     }

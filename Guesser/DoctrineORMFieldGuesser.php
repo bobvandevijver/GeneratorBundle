@@ -9,36 +9,30 @@ use Symfony\Component\DependencyInjection\ContainerAware;
 
 class DoctrineORMFieldGuesser extends ContainerAware
 {
+    /**
+     * @var Registry
+     */
     private $doctrine;
 
-    private $metadata;
-
+    /**
+     * @var boolean
+     */
     private $guessRequired;
 
+    /**
+     * @var boolean
+     */
     private $defaultRequired;
-
-    private static $current_class;
 
     public function __construct(Registry $doctrine)
     {
         $this->doctrine = $doctrine;
     }
 
-    protected function getMetadatas($class = null)
+    protected function getMetadatas($class)
     {
-        if ($class) {
-            self::$current_class = $class;
-        }
-
-        if (isset($this->metadata[self::$current_class]) || !$class) {
-            return $this->metadata[self::$current_class];
-        }
-
-        if (!$this->doctrine->getManagerForClass(self::$current_class)->getConfiguration()->getMetadataDriverImpl()->isTransient($class)) {
-            $this->metadata[self::$current_class] = $this->doctrine->getManagerForClass(self::$current_class)->getClassMetadata($class);
-        }
-
-        return $this->metadata[self::$current_class];
+        // Cache is implemented by Doctrine itself
+        return $this->doctrine->getManagerForClass($class)->getClassMetadata($class);
     }
 
     public function getAllFields($class)
@@ -51,7 +45,7 @@ class DoctrineORMFieldGuesser extends ContainerAware
      *
      * @param  string $model     The starting model.
      * @param  string $fieldPath The field path.
-     * @return string The leaf field's primary key.
+     * @return string The DB type for given model field path.
      */
     public function getDbType($model, $fieldPath)
     {
@@ -64,9 +58,9 @@ class DoctrineORMFieldGuesser extends ContainerAware
         if ($metadata->hasAssociation($field)) {
             if ($metadata->isSingleValuedAssociation($field)) {
                 return 'entity';
-            } else {
-                return 'collection';
             }
+
+            return 'collection';
         }
 
         if ($metadata->hasField($field)) {
@@ -76,8 +70,13 @@ class DoctrineORMFieldGuesser extends ContainerAware
         return 'virtual';
     }
 
-    public function getModelType($class, $fieldName)
+    public function getModelType($model, $fieldPath)
     {
+        $resolved = $this->resolveRelatedField($model, $fieldPath);
+
+        $class = $resolved['class'];
+        $fieldName = $resolved['field'];
+
         $metadata = $this->getMetadatas($class);
 
         if ($metadata->hasAssociation($fieldName)) {
@@ -117,57 +116,77 @@ class DoctrineORMFieldGuesser extends ContainerAware
         return 'default';
     }
 
-    public function getFormType($dbType, $columnName)
+    /**
+     * @param $dbType
+     * @param $class: for debug only
+     * @param $columnName: for debug only
+     * @return string
+     */
+    public function getFormType($dbType, $class, $columnName)
     {
         $formTypes = $this->container->getParameter('admingenerator.doctrine_form_types');
 
         if (array_key_exists($dbType, $formTypes)) {
             return $formTypes[$dbType];
-        } elseif ('virtual' === $dbType) {
-            return 'virtual_form';
-        } else {
-            throw new NotImplementedException(
-                'The dbType "'.$dbType.'" is not yet implemented '
-                .'(column "'.$columnName.'" in "'.self::$current_class.'")'
-            );
         }
+
+        if ('virtual' === $dbType) {
+            return 'virtual_form';
+        }
+
+        throw new NotImplementedException(
+            'The dbType "'.$dbType.'" is not yet implemented '
+            .'(column "'.$columnName.'" in "'.$class.'")'
+        );
     }
 
-    public function getFilterType($dbType, $columnName)
+    /**
+     * @param $dbType
+     * @param $class: for debug only
+     * @param $columnName: for debug only
+     * @return string
+     */
+    public function getFilterType($dbType, $class, $columnName)
     {
         $filterTypes = $this->container->getParameter('admingenerator.doctrine_filter_types');
 
         if (array_key_exists($dbType, $filterTypes)) {
             return $filterTypes[$dbType];
-        } elseif ('virtual' === $dbType) {
+        }
+
+        if ('virtual' === $dbType) {
             return 'virtual_filter';
-        } else {
-           throw new NotImplementedException(
-               'The dbType "'.$dbType.'" is not yet implemented '
-               .'(column "'.$columnName.'" in "'.self::$current_class.'")'
-           );
-       }
+        }
+
+        throw new NotImplementedException(
+            'The dbType "'.$dbType.'" is not yet implemented '
+            .'(column "'.$columnName.'" in "'.$class.'")'
+        );
     }
 
-    public function getFormOptions($formType, $dbType, $columnName)
+    public function getFormOptions($formType, $dbType, $model, $fieldPath)
     {
         if ('virtual' === $dbType) {
             return array();
         }
 
+        $resolved = $this->resolveRelatedField($model, $fieldPath);
+        $class = $resolved['class'];
+        $columnName = $resolved['field'];
+
         if ('boolean' == $dbType &&
             (preg_match("#^choice#i", $formType) || preg_match("#choice$#i", $formType))) {
             return array(
                 'choices' => array(
-                   0 => $this->container->get('translator')->trans('boolean.no', array(), 'Admingenerator'),
-                   1 => $this->container->get('translator')->trans('boolean.yes', array(), 'Admingenerator')
+                    0 => $this->container->get('translator')->trans('boolean.no', array(), 'Admingenerator'),
+                    1 => $this->container->get('translator')->trans('boolean.yes', array(), 'Admingenerator')
                 ),
                 'empty_value' => $this->container->get('translator')->trans('boolean.yes_or_no', array(), 'Admingenerator')
             );
         }
 
         if ('number' === $formType) {
-            $mapping = $this->getMetadatas()->getFieldMapping($columnName);
+            $mapping = $this->getMetadatas($class)->getFieldMapping($columnName);
 
             if (isset($mapping['scale'])) {
                 $precision = $mapping['scale'];
@@ -179,35 +198,38 @@ class DoctrineORMFieldGuesser extends ContainerAware
 
             return array(
                 'precision' => isset($precision) ? $precision : '',
-                'required'  => $this->isRequired($columnName)
+                'required'  => $this->isRequired($class, $columnName)
             );
         }
 
         if (preg_match("#^entity#i", $formType) || preg_match("#entity$#i", $formType)) {
-            $mapping = $this->getMetadatas()->getAssociationMapping($columnName);
+            $mapping = $this->getMetadatas($class)->getAssociationMapping($columnName);
 
             return array(
                 'multiple'      => ($mapping['type'] === ClassMetadataInfo::MANY_TO_MANY || $mapping['type'] === ClassMetadataInfo::ONE_TO_MANY),
-                'em'            => 'default',
+                'em'            => 'default', // TODO: compute EntityManagerName
                 'class'         => $mapping['targetEntity'],
-                'required'      => $this->isRequired($columnName),
+                'required'      => $this->isRequired($class, $columnName),
             );
         }
 
         if (preg_match("#^collection#i", $formType) || preg_match("#collection$#i", $formType)) {
+            $mapping = $this->getMetadatas($class)->getAssociationMapping($columnName);
+
             return array(
                 'allow_add'     => true,
                 'allow_delete'  => true,
                 'by_reference'  => false,
+                'data_class'    => $mapping['targetEntity']
             );
         }
 
         return array(
-            'required' => $this->isRequired($columnName)
+            'required' => $this->isRequired($class, $columnName)
         );
     }
 
-    protected function isRequired($fieldName)
+    protected function isRequired($class, $fieldName)
     {
         if (!isset($this->guessRequired) || !isset($this->defaultRequired)) {
             $this->guessRequired = $this->container->getParameter('admingenerator.guess_required');
@@ -218,7 +240,7 @@ class DoctrineORMFieldGuesser extends ContainerAware
             return $this->defaultRequired;
         }
 
-        $metadata = $this->getMetadatas();
+        $metadata = $this->getMetadatas($class);
 
         $hasField = $metadata->hasField($fieldName);
         $hasAssociation = $metadata->hasAssociation($fieldName);
@@ -261,10 +283,10 @@ class DoctrineORMFieldGuesser extends ContainerAware
             $class = $metadata->getAssociationTargetClass($field);
 
             return $this->getModelPrimaryKeyName($class);
-        } else {
-            // if the leaf node is not an association
-            return null;
         }
+
+        // if the leaf node is not an association
+        return null;
     }
 
     /**

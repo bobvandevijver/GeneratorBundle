@@ -31,7 +31,7 @@ class FiltersType extends BaseType
      */
     protected function getType{{ column.name|classify|php_name }}()
     {
-        return $this->inject({{ column.filterType|as_php|convert_as_form(column.filterType) }});
+        return $this->inject('{{ column.filterType }}');
     }
 
     /**

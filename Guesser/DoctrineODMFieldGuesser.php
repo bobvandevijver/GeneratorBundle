@@ -8,15 +8,30 @@ use Symfony\Component\DependencyInjection\ContainerAware;
 
 class DoctrineODMFieldGuesser extends ContainerAware
 {
+    /**
+     * @var DocumentManager
+     */
     private $documentManager;
 
+    /**
+     * @var array
+     */
     private $metadata;
 
+    /**
+     * @var boolean
+     */
     private $guessRequired;
 
+    /**
+     * @var boolean
+     */
     private $defaultRequired;
 
-    private static $current_class;
+    /**
+     * @var string
+     */
+    private static $currentClass;
 
     public function __construct(DocumentManager $documentManager)
     {
@@ -26,11 +41,11 @@ class DoctrineODMFieldGuesser extends ContainerAware
     protected function getMetadatas($class = null)
     {
         if ($class) {
-            self::$current_class = $class;
+            self::$currentClass = $class;
         }
 
-        if (isset($this->metadata[self::$current_class]) || !$class) {
-            return $this->metadata[self::$current_class];
+        if (isset($this->metadata[self::$currentClass]) || !$class) {
+            return $this->metadata[self::$currentClass];
         }
 
         if (!$this->documentManager->getConfiguration()->getMetadataDriverImpl()->isTransient($class)) {
@@ -73,9 +88,9 @@ class DoctrineODMFieldGuesser extends ContainerAware
         if ($metadata->hasAssociation($field)) {
             if ($metadata->isSingleValuedAssociation($field)) {
                 return 'document';
-            } else {
-                return 'collection';
             }
+
+            return 'collection';
         }
 
         if ($this->getMetadatas()->hasField($field)) {
@@ -138,14 +153,16 @@ class DoctrineODMFieldGuesser extends ContainerAware
 
         if (array_key_exists($dbType, $formTypes)) {
             return $formTypes[$dbType];
-        } elseif ('virtual' === $dbType) {
-            return 'virtual_form';
-        } else {
-            throw new NotImplementedException(
-                'The dbType "'.$dbType.'" is not yet implemented '
-                .'(column "'.$columnName.'" in "'.self::$current_class.'")'
-            );
         }
+
+        if ('virtual' === $dbType) {
+            return 'virtual_form';
+        }
+
+        throw new NotImplementedException(
+            'The dbType "'.$dbType.'" is not yet implemented '
+            .'(column "'.$columnName.'" in "'.self::$currentClass.'")'
+        );
     }
 
     public function getFilterType($dbType, $columnName)
@@ -154,14 +171,16 @@ class DoctrineODMFieldGuesser extends ContainerAware
 
         if (array_key_exists($dbType, $filterTypes)) {
             return $filterTypes[$dbType];
-        } elseif ('virtual' === $dbType) {
+        }
+
+        if ('virtual' === $dbType) {
             return 'virtual_filter';
-        } else {
-           throw new NotImplementedException(
-               'The dbType "'.$dbType.'" is not yet implemented '
-               .'(column "'.$columnName.'" in "'.self::$current_class.'")'
-           );
-       }
+        }
+
+        throw new NotImplementedException(
+           'The dbType "'.$dbType.'" is not yet implemented '
+           .'(column "'.$columnName.'" in "'.self::$currentClass.'")'
+       );
     }
 
     public function getFormOptions($formType, $dbType, $columnName)
@@ -294,10 +313,10 @@ class DoctrineODMFieldGuesser extends ContainerAware
             $class = $metadata->getAssociationTargetClass($field);
 
             return $this->getModelPrimaryKeyName($class);
-        } else {
-            // if the leaf node is not an association
-            return null;
         }
+
+        // if the leaf node is not an association
+        return null;
     }
 
     /**

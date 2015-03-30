@@ -212,7 +212,7 @@ class Configuration implements ConfigurationInterface
                                 // textarea types
                                 ->scalarNode('text')->defaultValue('text')->end()
                                 // association types
-                                ->scalarNode('entity')->defaultValue('model')->end()
+                                ->scalarNode('entity')->defaultValue('entity')->end()
                                 ->scalarNode('collection')->defaultValue('collection')->end()
                                 // array types
                                 ->scalarNode('array')->defaultValue('text')->end()
